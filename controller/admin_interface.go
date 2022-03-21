@@ -8,7 +8,10 @@ type IAdminController interface {
 	Login(c echo.Context) error
 	GetUsers(c echo.Context) error
 
-	CreateType(c echo.Context) error
+	CreateDomain(c echo.Context) error // create and update
+	GetDomains(c echo.Context) error
+	CreateCollege(c echo.Context) error
+	CreateCourse(c echo.Context) error
 
 	// Tasks
 	CreateTask(c echo.Context) error

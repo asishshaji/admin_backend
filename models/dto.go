@@ -6,12 +6,18 @@ import (
 )
 
 type MentorDTO struct {
-	Id           string `json:"_id"`
-	Name         string `validate:"required"`
-	Title        string `validate:"required"`
-	Organization string `validate:"required"`
-	Image        string `validate:"required"`
-	Domain       string `validate:"required"`
+	Id           string   `json:"_id"`
+	Name         string   `validate:"required"`
+	Title        string   `validate:"required"`
+	Organization string   `validate:"required"`
+	Image        string   `validate:"required"`
+	Domain       string   `validate:"required"`
+	Videos       []Videos `json:"videos"`
+}
+
+type Videos struct {
+	ThumbUrl string `json:"thumbnail"`
+	VideoUrl string `json:"video"`
 }
 
 func (mentor MentorDTO) Validate() error {
@@ -29,6 +35,7 @@ func (dto MentorDTO) ToMentor() Mentor {
 		Organization: dto.Organization,
 		Image:        dto.Image,
 		Domain:       dto.Domain,
+		Videos:       dto.Videos,
 	}
 }
 
@@ -62,7 +69,7 @@ func (task *TaskDTO) Validate() error {
 }
 
 type StudentDTO struct {
-	Username         string       `json:"username" validate:"required"`
+	Email            string       `json:"email" validate:"required"`
 	FirstName        string       `json:"first_name" validate:"required"`
 	PreferedType     PreferedType `json:"type"`
 	LastName         string       `json:"last_name" validate:"required"`
@@ -93,7 +100,7 @@ func (Student *StudentDTO) Validate() error {
 
 func (stu StudentDTO) ToStudent() Student {
 	return Student{
-		Username:         stu.Username,
+		Email:            stu.Email,
 		FirstName:        stu.FirstName,
 		PreferedType:     stu.PreferedType,
 		LastName:         stu.LastName,
@@ -115,4 +122,8 @@ func (stu StudentDTO) ToStudent() Student {
 		DateOfJoining:    stu.DateOfJoining,
 		CourseEndingDate: stu.CourseEndingDate,
 	}
+}
+
+type TokenDto struct {
+	Token string
 }

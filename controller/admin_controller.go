@@ -24,6 +24,8 @@ func NewAdminController(l *log.Logger, adminService admin_service.IAdminService)
 	}
 }
 
+// Admin start
+
 func (aC AdminController) Login(c echo.Context) error {
 	json_map := make(map[string]interface{})
 	err := json.NewDecoder(c.Request().Body).Decode(&json_map)
@@ -50,6 +52,20 @@ func (aC AdminController) Login(c echo.Context) error {
 		Message: token,
 	})
 }
+
+func (aC AdminController) GetUsers(c echo.Context) error {
+	students, err := aC.adminService.GetUsers(c.Request().Context())
+
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, students)
+}
+
+// Admin end
+
+// Tasks start
 
 func (aC AdminController) CreateTask(c echo.Context) error {
 
@@ -104,31 +120,6 @@ func (aC AdminController) UpdateTask(c echo.Context) error {
 	})
 }
 
-func (aC AdminController) GetTasks(c echo.Context) error {
-	tasks, err := aC.adminService.GetTasks(c.Request().Context())
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, models.Response{
-			Message: "Error getting tasks",
-		})
-	}
-
-	return c.JSON(http.StatusOK, tasks)
-}
-
-func (aC AdminController) GetUsers(c echo.Context) error {
-	students, err := aC.adminService.GetUsers(c.Request().Context())
-
-	if err != nil {
-		return echo.ErrInternalServerError
-	}
-
-	return c.JSON(http.StatusOK, students)
-}
-
-func (aC AdminController) CreateType(c echo.Context) error {
-	return nil
-}
-
 func (aC AdminController) DeleteTask(c echo.Context) error {
 	id := c.FormValue("task_id")
 	taskId, err := primitive.ObjectIDFromHex(id)
@@ -146,6 +137,95 @@ func (aC AdminController) DeleteTask(c echo.Context) error {
 		Message: "deleted task",
 	})
 }
+
+func (aC AdminController) GetTasks(c echo.Context) error {
+	tasks, err := aC.adminService.GetTasks(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, models.Response{
+			Message: "Error getting tasks",
+		})
+	}
+
+	return c.JSON(http.StatusOK, tasks)
+}
+
+// Tasks end
+
+func (aC AdminController) CreateDomain(c echo.Context) error {
+	json_map := make(map[string]interface{})
+	err := json.NewDecoder(c.Request().Body).Decode(&json_map)
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
+
+	if json_map["domain"] == nil {
+		return echo.ErrBadRequest
+	}
+
+	domainName := fmt.Sprintf("%v", json_map["domain"])
+
+	err = aC.adminService.CreateDomain(c.Request().Context(), domainName)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, models.Response{
+		Message: "created",
+	})
+}
+
+func (aC AdminController) GetDomains(c echo.Context) error {
+	return nil
+}
+
+func (aC AdminController) CreateCollege(c echo.Context) error {
+	json_map := make(map[string]interface{})
+	err := json.NewDecoder(c.Request().Body).Decode(&json_map)
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
+	if json_map["college"] == nil {
+		return echo.ErrBadRequest
+	}
+	college := fmt.Sprintf("%v", json_map["college"])
+
+	err = aC.adminService.CreateCollege(c.Request().Context(), college)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, models.Response{
+		Message: "created",
+	})
+}
+
+func (aC AdminController) CreateCourse(c echo.Context) error {
+	json_map := make(map[string]interface{})
+	err := json.NewDecoder(c.Request().Body).Decode(&json_map)
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
+
+	if json_map["course"] == nil {
+		return echo.ErrBadRequest
+	}
+
+	course := fmt.Sprintf("%v", json_map["course"])
+
+	err = aC.adminService.CreateCourse(c.Request().Context(), course)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, models.Response{
+		Message: "created",
+	})
+}
+
+// Tasks submissions start
 
 func (aC AdminController) GetTaskSubmissions(c echo.Context) error {
 	res, _ := aC.adminService.GetTaskSubmissions(c.Request().Context())
@@ -173,10 +253,15 @@ func (aC AdminController) EditTaskSubmissionStatus(c echo.Context) error {
 	taskIdObj, err := primitive.ObjectIDFromHex(taskId)
 	if err != nil {
 		aC.l.Println(err)
-		return echo.ErrInternalServerError
+		return echo.ErrBadRequest
 	}
 
-	err = aC.adminService.EditTaskSubmission(c.Request().Context(), taskIdObj, models.Status(statusString))
+	status := models.Status(statusString).String()
+	if status == "" {
+		return echo.ErrBadRequest
+	}
+
+	err = aC.adminService.EditTaskSubmission(c.Request().Context(), c.Get("admin_id").(primitive.ObjectID), taskIdObj, models.Status(statusString))
 	if err != nil {
 		return echo.ErrInternalServerError
 	}
@@ -200,6 +285,10 @@ func (aC AdminController) GetTaskSubmissionForUser(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, tasks)
 }
+
+// Tasks submission ends
+
+// Mentor starts
 
 func (aC AdminController) CreateMentor(c echo.Context) error {
 	mentor := new(models.MentorDTO)
@@ -259,3 +348,5 @@ func (aC AdminController) GetMentors(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, mentors)
 }
+
+// Mentor ends

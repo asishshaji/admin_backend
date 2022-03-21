@@ -24,7 +24,7 @@ type Admin struct {
 
 type Student struct {
 	ID               primitive.ObjectID   `bson:"_id" json:"_id"`
-	Username         string               `json:"username" validate:"required"`
+	Email            string               `json:"email" validate:"required"`
 	FirstName        string               `json:"first_name" validate:"required"`
 	PreferedType     PreferedType         `json:"type"`
 	LastName         string               `json:"last_name" validate:"required"`
@@ -58,7 +58,7 @@ func (students Students) ToStudentResponse() []StudentResponse {
 	for _, stu := range students {
 		studentReponse = append(studentReponse, StudentResponse{
 			ID:               stu.ID,
-			Username:         stu.Username,
+			Email:            stu.Email,
 			FirstName:        stu.FirstName,
 			PreferedType:     stu.PreferedType,
 			LastName:         stu.LastName,
@@ -94,6 +94,7 @@ type Mentor struct {
 	Organization string             `json:"organization" validate:"required"`
 	Domain       string             `json:"domain" validate:"required"`
 	Image        string             `json:"image"`
+	Videos       []Videos           `bson:"videos"`
 	CreatedAt    primitive.DateTime `bson:",omitempty"`
 	UpdatedAt    primitive.DateTime `bson:",omitempty"`
 }
@@ -114,6 +115,7 @@ func (dto *Mentor) ToResponse() *MentorResponse {
 		Domain:       dto.Domain,
 		CreatedAt:    dto.CreatedAt,
 		Image:        dto.Image,
+		Videos:       dto.Videos,
 	}
 }
 
@@ -138,11 +140,22 @@ type TaskSubmission struct {
 	UpdatedAt primitive.DateTime `bson:",omitempty"`
 }
 
-type Type struct {
+type StaticModel struct {
 	Name      string
-	CreatedOn primitive.DateTime
+	CreatedOn primitive.DateTime `bson:"created_at"`
 }
 
 type TT struct {
 	Mentors []primitive.ObjectID
+}
+
+type Token struct {
+	UserId primitive.ObjectID `bson:"user_id"`
+	Token  string             `bson:"token"`
+}
+
+type NotificationMessage struct {
+	UserToken string
+	Contents  map[string]string
+	Heading   map[string]string
 }

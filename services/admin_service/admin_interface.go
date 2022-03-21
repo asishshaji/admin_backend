@@ -15,10 +15,14 @@ type IAdminService interface {
 	GetTasks(ctx context.Context) ([]models.Task, error)
 	GetUsers(ctx context.Context) ([]models.StudentResponse, error)
 	GetTaskSubmissions(c context.Context) ([]models.TaskSubmissionsAdminResponse, error)
-	EditTaskSubmission(ctx context.Context, taskId primitive.ObjectID, status models.Status) error
+	EditTaskSubmission(ctx context.Context, uid primitive.ObjectID, taskId primitive.ObjectID, status models.Status) error
 	GetTaskSubmissionsForUser(ctx context.Context, userId primitive.ObjectID) ([]models.TaskSubmissionsAdminResponse, error)
 
 	CreateMentor(ctx context.Context, mentor models.MentorDTO) error
 	UpdateMentor(ctx context.Context, mentor models.MentorDTO) error
 	GetMentors(ctx context.Context) ([]models.MentorResponse, error)
+
+	CreateDomain(ctx context.Context, domainString string) error
+	CreateCollege(ctx context.Context, college string) error
+	CreateCourse(ctx context.Context, course string) error
 }

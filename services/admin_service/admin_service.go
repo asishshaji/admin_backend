@@ -8,7 +8,8 @@ import (
 
 	"github.com/asishshaji/admin-api/models"
 	admin_repository "github.com/asishshaji/admin-api/repositories"
-	"github.com/asishshaji/admin-api/services/image_service"
+	file_service "github.com/asishshaji/admin-api/services/file"
+	"github.com/asishshaji/admin-api/services/notification_service"
 	"github.com/asishshaji/admin-api/utils"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
@@ -16,31 +17,41 @@ import (
 )
 
 type AdminService struct {
-	l            *log.Logger
-	adminRepo    admin_repository.IAdminRepository
-	rClient      *redis.Client
-	imageService image_service.IImageService
+	l                   *log.Logger
+	adminRepo           admin_repository.IAdminRepository
+	rClient             *redis.Client
+	imageService        file_service.IFileService
+	notificationService notification_service.INotificationService
 }
 
-func NewAdminService(l *log.Logger, adminRepo admin_repository.IAdminRepository, rClient *redis.Client, imgService image_service.IImageService) IAdminService {
+func NewAdminService(l *log.Logger, adminRepo admin_repository.IAdminRepository, rClient *redis.Client, fileService file_service.IFileService, notification notification_service.INotificationService) IAdminService {
 	return AdminService{
-		l:            l,
-		adminRepo:    adminRepo,
-		rClient:      rClient,
-		imageService: imgService,
+		l:                   l,
+		adminRepo:           adminRepo,
+		rClient:             rClient,
+		imageService:        fileService,
+		notificationService: notification,
 	}
 }
 
 func (aS AdminService) Login(ctx context.Context, username, password string) (string, error) {
+
+	var token string = "16000112-a6ab-11ec-abda-ee142f97fd44"
+
+	msg := models.NotificationMessage{
+		UserToken: token,
+		Heading:   map[string]string{"en": "Hi Welcome"},
+		Contents:  map[string]string{"en": "Helloooo. Notification Body"},
+	}
+
+	aS.notificationService.SendNotification(ctx, msg)
 
 	admin, err := aS.adminRepo.GetAdmin(ctx, username)
 
 	if err != nil {
 		return "", models.ErrNoAdminWithUsername
 	}
-	// TODO password
-	authenticate := utils.CheckPasswordHash(password, admin.Password)
-	authenticate = true
+	authenticate := utils.CheckpasswordHash(password, admin.Password)
 
 	if !authenticate {
 		return "", models.ErrInvalidCredentials
@@ -117,8 +128,28 @@ func (aS AdminService) DeleteTask(c context.Context, taskId primitive.ObjectID) 
 func (aS AdminService) GetTaskSubmissions(c context.Context) ([]models.TaskSubmissionsAdminResponse, error) {
 	return aS.adminRepo.GetTaskSubmissions(c)
 }
-func (aS AdminService) EditTaskSubmission(ctx context.Context, taskId primitive.ObjectID, status models.Status) error {
-	return aS.adminRepo.EditTaskSubmissionStatus(ctx, status, taskId)
+func (aS AdminService) EditTaskSubmission(ctx context.Context, uid primitive.ObjectID, taskId primitive.ObjectID, status models.Status) error {
+	err := aS.adminRepo.EditTaskSubmissionStatus(ctx, status, taskId)
+	if err != nil {
+		return err
+	}
+
+	tK, err := aS.adminRepo.GetToken(ctx, uid)
+	if err != nil {
+		return err
+	}
+
+	msg := models.NotificationMessage{
+		UserToken: tK.Token,
+		Heading:   map[string]string{"en": "Your task is " + status.String()},
+	}
+
+	err = aS.notificationService.SendNotification(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (aS AdminService) GetTaskSubmissionsForUser(ctx context.Context, userId primitive.ObjectID) ([]models.TaskSubmissionsAdminResponse, error) {
@@ -159,4 +190,31 @@ func (aS AdminService) GetMentors(ctx context.Context) ([]models.MentorResponse,
 	}
 
 	return mentorResponses, nil
+}
+func (aS AdminService) CreateDomain(ctx context.Context, domainString string) error {
+
+	domain := models.StaticModel{
+		Name:      domainString,
+		CreatedOn: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	return aS.adminRepo.CreateDomain(ctx, domain)
+}
+
+func (aS AdminService) CreateCollege(ctx context.Context, college string) error {
+	c := models.StaticModel{
+		Name:      college,
+		CreatedOn: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	return aS.adminRepo.CreateCollege(ctx, c)
+}
+
+func (aS AdminService) CreateCourse(ctx context.Context, course string) error {
+	c := models.StaticModel{
+		Name:      course,
+		CreatedOn: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	return aS.adminRepo.CreateCourse(ctx, c)
 }

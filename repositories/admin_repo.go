@@ -22,6 +22,11 @@ type AdminRepository struct {
 	studentCollection        *mongo.Collection
 	taskSubmissionCollection *mongo.Collection
 	mentorCollection         *mongo.Collection
+	domainCollection         *mongo.Collection
+	collegeCollection        *mongo.Collection
+	tokenCollection          *mongo.Collection
+
+	courseCollection *mongo.Collection
 }
 
 func NewAdminRepository(l *log.Logger, db *mongo.Database) IAdminRepository {
@@ -33,8 +38,32 @@ func NewAdminRepository(l *log.Logger, db *mongo.Database) IAdminRepository {
 		taskCollection:           db.Collection("tasks"),
 		typeCollection:           db.Collection("types"),
 		studentCollection:        db.Collection("students"),
+		tokenCollection:          db.Collection("tokens"),
 		taskSubmissionCollection: db.Collection("task_submission"),
+		domainCollection:         db.Collection("domains"),
+		collegeCollection:        db.Collection("colleges"),
+		courseCollection:         db.Collection("courses"),
 	}
+}
+func (aR AdminRepository) GenerateAdminCredentials(ctx context.Context, username, password string) error {
+	opts := options.Update().SetUpsert(true)
+
+	res, err := aR.adminCollection.UpdateOne(ctx, bson.M{
+		"username": username,
+	}, bson.M{
+		"$set": bson.M{
+			"username": username,
+			"password": password,
+		},
+	}, opts)
+
+	fmt.Println(res.MatchedCount)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (adminRepo AdminRepository) GetAdmin(ctx context.Context, username string) (*models.Admin, error) {
@@ -107,9 +136,31 @@ func (aR AdminRepository) GetTasks(ctx context.Context) ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (aR AdminRepository) CreateType(ctx context.Context, typeT models.Type) error {
+func (aR AdminRepository) CreateDomain(c context.Context, domain models.StaticModel) error {
+	return insertStaticModelData(c, aR.domainCollection, domain)
+}
 
+func insertStaticModelData(c context.Context, collection *mongo.Collection, data models.StaticModel) error {
+	opts := options.Update().SetUpsert(true)
+
+	_, err := collection.UpdateOne(c, bson.M{
+		"name": data.Name,
+	}, bson.M{
+		"$set": data,
+	}, opts)
+
+	if err != nil {
+		return err
+	}
 	return nil
+
+}
+
+func (aR AdminRepository) CreateCollege(c context.Context, college models.StaticModel) error {
+	return insertStaticModelData(c, aR.collegeCollection, college)
+}
+func (aR AdminRepository) CreateCourse(c context.Context, course models.StaticModel) error {
+	return insertStaticModelData(c, aR.courseCollection, course)
 }
 
 func (aR AdminRepository) GetUsers(ctx context.Context) (models.Students, error) {
@@ -185,6 +236,9 @@ func (aR AdminRepository) GetTaskSubmissions(c context.Context) ([]models.TaskSu
 			{
 				"status", 1,
 			},
+			{
+				"updatedat", 1,
+			},
 		},
 	}}
 
@@ -241,8 +295,6 @@ func (aR AdminRepository) EditTaskSubmissionStatus(c context.Context, status mod
 		aR.l.Println(models.ErrNoValidRecordFound)
 		return models.ErrNoValidRecordFound
 	}
-
-	aR.l.Println(res.MatchedCount)
 
 	if err != nil {
 		aR.l.Println(err)
@@ -345,7 +397,6 @@ func (aR AdminRepository) GetTaskSubmissionsForUser(c context.Context, userid pr
 }
 
 func (aR AdminRepository) CreateMentor(c context.Context, mentor models.Mentor) error {
-	fmt.Println(mentor.Domain)
 	res, err := aR.mentorCollection.InsertOne(c, mentor)
 
 	if mongo.IsDuplicateKeyError(err) {
@@ -400,4 +451,25 @@ func (aR AdminRepository) GetMentors(c context.Context) ([]models.Mentor, error)
 	}
 
 	return mentors, nil
+}
+
+func (aR AdminRepository) GetToken(ctx context.Context, uid primitive.ObjectID) (models.Token, error) {
+	token := models.Token{}
+
+	res := aR.tokenCollection.FindOne(ctx, bson.M{
+		"user_id": uid,
+	})
+
+	if res.Err() != nil {
+		return token, res.Err()
+	}
+
+	err := res.Decode(&token)
+	if err != nil {
+		aR.l.Println(err)
+		return token, err
+	}
+
+	return token, nil
+
 }

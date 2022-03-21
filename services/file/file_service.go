@@ -1,4 +1,4 @@
-package image_service
+package file_service
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/api/uploader"
 )
 
-type ImageService struct {
+type FileService struct {
 	l      *log.Logger
 	client *cloudinary.Cloudinary
 }
@@ -26,16 +26,16 @@ func connectToCloudinary(l *log.Logger) *cloudinary.Cloudinary {
 
 }
 
-func NewImageService(l *log.Logger) IImageService {
+func NewFileService(l *log.Logger) IFileService {
 	cloudinaryClient := connectToCloudinary(l)
 
-	return ImageService{
+	return FileService{
 		l:      l,
 		client: cloudinaryClient,
 	}
 }
 
-func (iS ImageService) UploadImage(ctx context.Context, file multipart.File) (string, error) {
+func (iS FileService) UploadFile(ctx context.Context, file multipart.File) (string, error) {
 	res, err := iS.client.Upload.Upload(ctx, file, uploader.UploadParams{})
 	if err != nil {
 		iS.l.Println(err)

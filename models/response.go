@@ -4,7 +4,7 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type StudentResponse struct {
 	ID               primitive.ObjectID `json:"id"`
-	Username         string             `json:"username"`
+	Email            string             `json:"email"`
 	FirstName        string             `json:"first_name"`
 	PreferedType     PreferedType       `json:"type"`
 	LastName         string             `json:"last_name"`
@@ -36,6 +36,7 @@ type MentorResponse struct {
 	Domain       string             `json:"domain"`
 	CreatedAt    primitive.DateTime `json:"created_at"`
 	Image        string             `json:"image"`
+	Videos       []Videos           `json:"videos,omitempty"`
 }
 
 type TaskStudentResponse struct {
@@ -50,16 +51,16 @@ type TaskStudentResponse struct {
 }
 
 type StudentTaskRespone struct {
-	Username string             `json:"username"`
-	Id       primitive.ObjectID `json:"_id" bson:"_id"`
+	Email string             `json:"email"`
+	Id    primitive.ObjectID `json:"_id" bson:"_id"`
 }
 
 type TaskSubmissionsAdminResponse struct {
-	ID      primitive.ObjectID `json:"_id" bson:"_id"`
-	FileURL string             `json:"fileurl"`
-	Status  Status             `json:"status"`
-	Comment string             `json:"comment"`
-	Task    Task               `json:"task"`
-	Student StudentTaskRespone `json:"student"`
-	// UpdatedAt primitive.DateTime `json:"updated_at"`
+	ID        primitive.ObjectID `json:"_id" bson:"_id"`
+	UpdatedAt primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	FileURL   string             `json:"fileurl"`
+	Status    Status             `json:"status"`
+	Comment   string             `json:"comment"`
+	Task      Task               `json:"task"`
+	Student   StudentTaskRespone `json:"student"`
 }

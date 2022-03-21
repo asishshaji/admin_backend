@@ -57,6 +57,10 @@ func NewApp(port string, controller Controllers) *App {
 	adminGroup.POST("/mentor", controller.AdminController.CreateMentor)
 	adminGroup.PUT("/mentor", controller.AdminController.UpdateMentor)
 
+	adminGroup.POST("/domain", controller.AdminController.CreateDomain)
+	adminGroup.POST("/college", controller.AdminController.CreateCollege)
+	adminGroup.POST("/course", controller.AdminController.CreateCourse)
+
 	return &App{
 		app:  e,
 		port: port,

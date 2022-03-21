@@ -8,7 +8,8 @@ import (
 	admin_controller "github.com/asishshaji/admin-api/controller"
 	admin_repository "github.com/asishshaji/admin-api/repositories"
 	"github.com/asishshaji/admin-api/services/admin_service"
-	"github.com/asishshaji/admin-api/services/image_service"
+	file_service "github.com/asishshaji/admin-api/services/file"
+	"github.com/asishshaji/admin-api/services/notification_service"
 	"github.com/asishshaji/admin-api/utils"
 	"github.com/go-redis/redis/v8"
 )
@@ -33,11 +34,22 @@ func main() {
 		logger.Println("Connected to redis")
 	}
 
-	imageService := image_service.NewImageService(logger)
+	imageService := file_service.NewFileService(logger)
+	onesignalService := notification_service.NewNotificationService(logger)
 
 	adminRepo := admin_repository.NewAdminRepository(logger, db)
-	adminService := admin_service.NewAdminService(logger, adminRepo, redisClient, imageService)
+	adminService := admin_service.NewAdminService(logger, adminRepo, redisClient, imageService, onesignalService)
 	adminController := admin_controller.NewAdminController(logger, adminService)
+
+	password, err := utils.Hashpassword(os.Getenv("ADMIN_PASSWORD"))
+	if err != nil {
+		log.Fatalln("Error creating admin")
+	}
+
+	err = adminRepo.GenerateAdminCredentials(context.Background(), os.Getenv("ADMIN_USERNAME"), password)
+	if err != nil {
+		log.Fatalln("Error creating admin")
+	}
 
 	controller := Controllers{
 		AdminController: adminController,
