@@ -37,10 +37,11 @@ func NewFileService(l *log.Logger) IFileService {
 
 func (iS FileService) UploadFile(ctx context.Context, file multipart.File) (string, error) {
 	res, err := iS.client.Upload.Upload(ctx, file, uploader.UploadParams{})
+
 	if err != nil {
 		iS.l.Println(err)
 		return "", err
 	}
 
-	return res.URL, nil
+	return res.SecureURL, nil
 }

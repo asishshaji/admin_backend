@@ -48,8 +48,8 @@ type TaskSubmissionDTO struct {
 type TaskDTO struct {
 	ID       string
 	Semester string `json:"semester" validate:"required"`
-	Domain   string `json:"type" validate:"required"`  // TYPE CAN BE RETAIL, ED-Tech
-	Title    string `json:"title" validate:"required"` // title of task
+	Domain   string `json:"domain" validate:"required"` // TYPE CAN BE RETAIL, ED-Tech
+	Title    string `json:"title" validate:"required"`  // title of task
 	Detail   string `json:"detail" validate:"required"`
 }
 
