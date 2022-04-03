@@ -34,12 +34,12 @@ func main() {
 		logger.Println("Connected to redis")
 	}
 
-	imageService := file_service.NewFileService(logger)
+	fileService := file_service.NewFileService(logger)
 	onesignalService := notification_service.NewNotificationService(logger)
 
 	adminRepo := admin_repository.NewAdminRepository(logger, db)
-	adminService := admin_service.NewAdminService(logger, adminRepo, redisClient, imageService, onesignalService)
-	adminController := admin_controller.NewAdminController(logger, adminService)
+	adminService := admin_service.NewAdminService(logger, adminRepo, redisClient, onesignalService)
+	adminController := admin_controller.NewAdminController(logger, adminService, fileService)
 
 	password, err := utils.Hashpassword(os.Getenv("ADMIN_PASSWORD"))
 	if err != nil {

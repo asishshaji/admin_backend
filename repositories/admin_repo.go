@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/asishshaji/admin-api/models"
 	"github.com/asishshaji/admin-api/utils"
@@ -25,8 +26,8 @@ type AdminRepository struct {
 	domainCollection         *mongo.Collection
 	collegeCollection        *mongo.Collection
 	tokenCollection          *mongo.Collection
-
-	courseCollection *mongo.Collection
+	notificationCollection   *mongo.Collection
+	courseCollection         *mongo.Collection
 }
 
 func NewAdminRepository(l *log.Logger, db *mongo.Database) IAdminRepository {
@@ -43,6 +44,7 @@ func NewAdminRepository(l *log.Logger, db *mongo.Database) IAdminRepository {
 		domainCollection:         db.Collection("domains"),
 		collegeCollection:        db.Collection("colleges"),
 		courseCollection:         db.Collection("courses"),
+		notificationCollection:   db.Collection("notifications"),
 	}
 }
 func (aR AdminRepository) GenerateAdminCredentials(ctx context.Context, username, password string) error {
@@ -140,6 +142,15 @@ func (aR AdminRepository) CreateDomain(c context.Context, domain models.StaticMo
 	return insertStaticModelData(c, aR.domainCollection, domain)
 }
 
+func (aR AdminRepository) CreateNotification(ctx context.Context, notification models.NotificationEntity) error {
+	res, err := aR.notificationCollection.InsertOne(ctx, notification)
+	if err != nil {
+		return err
+	}
+	aR.l.Println("Inserted notification with id :> ", res.InsertedID)
+	return nil
+}
+
 func insertStaticModelData(c context.Context, collection *mongo.Collection, data models.StaticModel) error {
 	opts := options.Update().SetUpsert(true)
 
@@ -216,7 +227,7 @@ func (aR AdminRepository) GetTaskSubmissions(c context.Context) ([]models.TaskSu
 	projectStage1 := bson.D{{
 		"$project", bson.D{
 			{
-				"student.username", 1,
+				"student.email", 1,
 			},
 			{
 				"student._id", 1,
@@ -285,9 +296,11 @@ func (aR AdminRepository) GetTaskSubmissions(c context.Context) ([]models.TaskSu
 }
 
 func (aR AdminRepository) EditTaskSubmissionStatus(c context.Context, status models.Status, taskid primitive.ObjectID) error {
+
 	res, err := aR.taskSubmissionCollection.UpdateByID(c, taskid, bson.M{
 		"$set": bson.M{
-			"status": status,
+			"status":    status,
+			"updatedat": time.Now(),
 		},
 	})
 
@@ -330,7 +343,7 @@ func (aR AdminRepository) GetTaskSubmissionsForUser(c context.Context, userid pr
 	projectStage1 := bson.D{{
 		"$project", bson.D{
 			{
-				"student.username", 1,
+				"student.email", 1,
 			},
 			{
 				"student._id", 1,
@@ -349,6 +362,9 @@ func (aR AdminRepository) GetTaskSubmissionsForUser(c context.Context, userid pr
 			},
 			{
 				"status", 1,
+			},
+			{
+				"updatedat", 1,
 			},
 		},
 	}}
@@ -386,10 +402,15 @@ func (aR AdminRepository) GetTaskSubmissionsForUser(c context.Context, userid pr
 		aR.l.Println(err)
 		return nil, err
 	}
+
 	var responseData []models.TaskSubmissionsAdminResponse
 	if err = cursor.All(c, &responseData); err != nil {
 		aR.l.Println(err)
 		return nil, err
+	}
+
+	if len(responseData) == 0 {
+		return responseData, fmt.Errorf("no data exists for user id")
 	}
 
 	return responseData, nil
@@ -456,6 +477,8 @@ func (aR AdminRepository) GetMentors(c context.Context) ([]models.Mentor, error)
 func (aR AdminRepository) GetToken(ctx context.Context, uid primitive.ObjectID) (models.Token, error) {
 	token := models.Token{}
 
+	fmt.Println(uid)
+
 	res := aR.tokenCollection.FindOne(ctx, bson.M{
 		"user_id": uid,
 	})
@@ -472,4 +495,46 @@ func (aR AdminRepository) GetToken(ctx context.Context, uid primitive.ObjectID) 
 
 	return token, nil
 
+}
+
+func (aR AdminRepository) GetDomains(ctx context.Context) ([]models.StaticModel, error) {
+	domains := []models.StaticModel{}
+
+	cursor, err := aR.domainCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return domains, err
+	}
+	if err = cursor.All(ctx, &domains); err != nil {
+		return domains, err
+	}
+
+	return domains, nil
+}
+
+func (aR AdminRepository) GetColleges(ctx context.Context) ([]models.StaticModel, error) {
+	c := []models.StaticModel{}
+
+	cursor, err := aR.collegeCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return c, err
+	}
+	if err = cursor.All(ctx, &c); err != nil {
+		return c, err
+	}
+
+	return c, nil
+}
+
+func (aR AdminRepository) GetCourses(ctx context.Context) ([]models.StaticModel, error) {
+	c := []models.StaticModel{}
+
+	cursor, err := aR.courseCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return c, err
+	}
+	if err = cursor.All(ctx, &c); err != nil {
+		return c, err
+	}
+
+	return c, nil
 }

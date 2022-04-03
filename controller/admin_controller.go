@@ -8,6 +8,7 @@ import (
 
 	"github.com/asishshaji/admin-api/models"
 	"github.com/asishshaji/admin-api/services/admin_service"
+	file_service "github.com/asishshaji/admin-api/services/file"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -15,12 +16,14 @@ import (
 type AdminController struct {
 	l            *log.Logger
 	adminService admin_service.IAdminService
+	fileService  file_service.IFileService
 }
 
-func NewAdminController(l *log.Logger, adminService admin_service.IAdminService) IAdminController {
+func NewAdminController(l *log.Logger, adminService admin_service.IAdminService, fileService file_service.IFileService) IAdminController {
 	return AdminController{
 		l:            l,
 		adminService: adminService,
+		fileService:  fileService,
 	}
 }
 
@@ -228,7 +231,11 @@ func (aC AdminController) CreateCourse(c echo.Context) error {
 // Tasks submissions start
 
 func (aC AdminController) GetTaskSubmissions(c echo.Context) error {
-	res, _ := aC.adminService.GetTaskSubmissions(c.Request().Context())
+	res, err := aC.adminService.GetTaskSubmissions(c.Request().Context())
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
 	return c.JSON(http.StatusOK, res)
 }
 
@@ -244,6 +251,8 @@ func (aC AdminController) EditTaskSubmissionStatus(c echo.Context) error {
 	statusString := fmt.Sprintf("%v", json_map["status"])
 
 	taskId := fmt.Sprintf("%v", json_map["task_id"])
+	uid := fmt.Sprintf("%v", json_map["u_id"])
+	u_id, _ := primitive.ObjectIDFromHex(uid)
 
 	if statusString == "" {
 		aC.l.Println("Error parsing status")
@@ -261,7 +270,7 @@ func (aC AdminController) EditTaskSubmissionStatus(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	err = aC.adminService.EditTaskSubmission(c.Request().Context(), c.Get("admin_id").(primitive.ObjectID), taskIdObj, models.Status(statusString))
+	err = aC.adminService.EditTaskSubmission(c.Request().Context(), u_id, taskIdObj, models.Status(statusString))
 	if err != nil {
 		return echo.ErrInternalServerError
 	}
@@ -280,7 +289,9 @@ func (aC AdminController) GetTaskSubmissionForUser(c echo.Context) error {
 	}
 	tasks, err := aC.adminService.GetTaskSubmissionsForUser(c.Request().Context(), userIdObj)
 	if err != nil {
-		return echo.ErrInternalServerError
+		return c.JSON(http.StatusNotFound, models.Response{
+			Message: err.Error(),
+		})
 	}
 
 	return c.JSON(http.StatusOK, tasks)
@@ -350,3 +361,29 @@ func (aC AdminController) GetMentors(c echo.Context) error {
 }
 
 // Mentor ends
+
+func (aC AdminController) GetData(c echo.Context) error {
+
+	domains, err := aC.adminService.GetData(c.Request().Context())
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, domains)
+}
+
+func (aC AdminController) UploadFile(c echo.Context) error {
+	image, _, _ := c.Request().FormFile("file")
+
+	url, err := aC.fileService.UploadFile(c.Request().Context(), image)
+	if err != nil {
+		aC.l.Println(err)
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"url": url,
+	})
+
+}

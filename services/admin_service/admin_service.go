@@ -2,13 +2,13 @@ package admin_service
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"time"
 
 	"github.com/asishshaji/admin-api/models"
 	admin_repository "github.com/asishshaji/admin-api/repositories"
-	file_service "github.com/asishshaji/admin-api/services/file"
 	"github.com/asishshaji/admin-api/services/notification_service"
 	"github.com/asishshaji/admin-api/utils"
 	"github.com/go-redis/redis/v8"
@@ -20,31 +20,20 @@ type AdminService struct {
 	l                   *log.Logger
 	adminRepo           admin_repository.IAdminRepository
 	rClient             *redis.Client
-	imageService        file_service.IFileService
 	notificationService notification_service.INotificationService
 }
 
-func NewAdminService(l *log.Logger, adminRepo admin_repository.IAdminRepository, rClient *redis.Client, fileService file_service.IFileService, notification notification_service.INotificationService) IAdminService {
+func NewAdminService(l *log.Logger, adminRepo admin_repository.IAdminRepository, rClient *redis.Client, notification notification_service.INotificationService) IAdminService {
 	return AdminService{
-		l:                   l,
-		adminRepo:           adminRepo,
-		rClient:             rClient,
-		imageService:        fileService,
+		l:         l,
+		adminRepo: adminRepo,
+		rClient:   rClient,
+
 		notificationService: notification,
 	}
 }
 
 func (aS AdminService) Login(ctx context.Context, username, password string) (string, error) {
-
-	var token string = "16000112-a6ab-11ec-abda-ee142f97fd44"
-
-	msg := models.NotificationMessage{
-		UserToken: token,
-		Heading:   map[string]string{"en": "Hi Welcome"},
-		Contents:  map[string]string{"en": "Helloooo. Notification Body"},
-	}
-
-	aS.notificationService.SendNotification(ctx, msg)
 
 	admin, err := aS.adminRepo.GetAdmin(ctx, username)
 
@@ -129,6 +118,7 @@ func (aS AdminService) GetTaskSubmissions(c context.Context) ([]models.TaskSubmi
 	return aS.adminRepo.GetTaskSubmissions(c)
 }
 func (aS AdminService) EditTaskSubmission(ctx context.Context, uid primitive.ObjectID, taskId primitive.ObjectID, status models.Status) error {
+
 	err := aS.adminRepo.EditTaskSubmissionStatus(ctx, status, taskId)
 	if err != nil {
 		return err
@@ -136,15 +126,31 @@ func (aS AdminService) EditTaskSubmission(ctx context.Context, uid primitive.Obj
 
 	tK, err := aS.adminRepo.GetToken(ctx, uid)
 	if err != nil {
-		return err
+		aS.l.Println(err)
 	}
+
+	title := "Your task is " + status.String()
+	content := "Dolor aliquip labore incididunt id dolore culpa. Sunt velit cillum magna ad. Voluptate est cupidatat excepteur ut voluptate. Et anim incididunt cillum occaecat anim laboris ullamco dolor."
 
 	msg := models.NotificationMessage{
 		UserToken: tK.Token,
-		Heading:   map[string]string{"en": "Your task is " + status.String()},
+		Heading:   map[string]string{"en": title},
+		Contents:  map[string]string{"en": content},
 	}
 
 	err = aS.notificationService.SendNotification(ctx, msg)
+	if err != nil {
+		aS.l.Println(err)
+	}
+
+	err = aS.adminRepo.CreateNotification(ctx, models.NotificationEntity{
+		UserId:    uid,
+		Content:   content,
+		Title:     title,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		Image:     "",
+	})
+
 	if err != nil {
 		return err
 	}
@@ -217,4 +223,57 @@ func (aS AdminService) CreateCourse(ctx context.Context, course string) error {
 	}
 
 	return aS.adminRepo.CreateCourse(ctx, c)
+}
+
+func (aS AdminService) GetData(ctx context.Context) (models.Data, error) {
+	data := models.Data{}
+
+	res, err := aS.rClient.Get(ctx, "static_data").Result()
+	if err != redis.Nil {
+		aS.l.Println("Getting data from cache")
+
+		err = json.Unmarshal([]byte(res), &data)
+		if err != nil {
+			return data, err
+		}
+		return data, nil
+	}
+
+	domainEntities, err := aS.adminRepo.GetDomains(ctx)
+	if err != nil {
+		return data, err
+	}
+	collegeEntities, err := aS.adminRepo.GetColleges(ctx)
+	if err != nil {
+		return data, err
+	}
+	courseEntities, err := aS.adminRepo.GetCourses(ctx)
+	if err != nil {
+		return data, err
+	}
+
+	for _, v := range domainEntities {
+		data.Domains = append(data.Domains, v.Name)
+	}
+
+	for _, v := range collegeEntities {
+		data.Colleges = append(data.Colleges, v.Name)
+	}
+
+	for _, v := range courseEntities {
+		data.Courses = append(data.Courses, v.Name)
+
+	}
+
+	b, err := json.Marshal(&data)
+	if err != nil {
+		return data, err
+	}
+
+	r := aS.rClient.Set(ctx, "static_data", b, time.Hour*2)
+	if r.Err() != nil {
+		return data, r.Err()
+	}
+
+	return data, nil
 }

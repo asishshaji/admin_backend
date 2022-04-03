@@ -32,6 +32,8 @@ func NewApp(port string, controller Controllers) *App {
 	e.Use(middleware.Secure())
 
 	e.POST("/login", controller.AdminController.Login)
+	e.GET("/data", controller.AdminController.GetData)
+
 	adminGroup := e.Group("/admin")
 
 	adminGroup.Use(middleware.JWTWithConfig(middleware.JWTConfig{
@@ -60,6 +62,7 @@ func NewApp(port string, controller Controllers) *App {
 	adminGroup.POST("/domain", controller.AdminController.CreateDomain)
 	adminGroup.POST("/college", controller.AdminController.CreateCollege)
 	adminGroup.POST("/course", controller.AdminController.CreateCourse)
+	adminGroup.POST("/upload", controller.AdminController.UploadFile)
 
 	return &App{
 		app:  e,

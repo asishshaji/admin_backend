@@ -28,4 +28,10 @@ type IAdminRepository interface {
 	CreateCollege(c context.Context, college models.StaticModel) error
 	CreateCourse(c context.Context, course models.StaticModel) error
 	GetToken(c context.Context, uid primitive.ObjectID) (models.Token, error)
+
+	GetDomains(ctx context.Context) ([]models.StaticModel, error)
+	GetColleges(ctx context.Context) ([]models.StaticModel, error)
+	GetCourses(ctx context.Context) ([]models.StaticModel, error)
+
+	CreateNotification(ctx context.Context, notification models.NotificationEntity) error
 }

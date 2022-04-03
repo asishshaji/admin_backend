@@ -6,7 +6,7 @@ type StudentResponse struct {
 	ID               primitive.ObjectID `json:"id"`
 	Email            string             `json:"email"`
 	FirstName        string             `json:"first_name"`
-	PreferedType     PreferedType       `json:"type"`
+	Domains          []string           `json:"domains"`
 	LastName         string             `json:"last_name"`
 	MiddleName       string             `json:"middle_name"`
 	CreatedAt        primitive.DateTime `json:"created_at"`
@@ -57,10 +57,16 @@ type StudentTaskRespone struct {
 
 type TaskSubmissionsAdminResponse struct {
 	ID        primitive.ObjectID `json:"_id" bson:"_id"`
-	UpdatedAt primitive.DateTime `json:"updated_at" bson:"updated_at"`
+	UpdatedAt primitive.DateTime `json:"updated_at" bson:"updatedat"`
 	FileURL   string             `json:"fileurl"`
 	Status    Status             `json:"status"`
 	Comment   string             `json:"comment"`
 	Task      Task               `json:"task"`
 	Student   StudentTaskRespone `json:"student"`
+}
+
+type Data struct {
+	Domains  []string `json:"domains"`
+	Colleges []string `json:"colleges"`
+	Courses  []string `json:"courses"`
 }

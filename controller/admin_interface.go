@@ -29,4 +29,7 @@ type IAdminController interface {
 	UpdateMentor(c echo.Context) error
 	GetMentors(c echo.Context) error
 	// DeleteMentor(c echo.Context) error
+
+	GetData(c echo.Context) error
+	UploadFile(c echo.Context) error
 }

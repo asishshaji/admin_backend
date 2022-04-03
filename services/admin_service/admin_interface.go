@@ -25,4 +25,6 @@ type IAdminService interface {
 	CreateDomain(ctx context.Context, domainString string) error
 	CreateCollege(ctx context.Context, college string) error
 	CreateCourse(ctx context.Context, course string) error
+
+	GetData(ctx context.Context) (models.Data, error)
 }

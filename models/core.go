@@ -26,7 +26,7 @@ type Student struct {
 	ID               primitive.ObjectID   `bson:"_id" json:"_id"`
 	Email            string               `json:"email" validate:"required"`
 	FirstName        string               `json:"first_name" validate:"required"`
-	PreferedType     PreferedType         `json:"type"`
+	Domains          []string             `json:"domains,omitempty"`
 	LastName         string               `json:"last_name" validate:"required"`
 	MiddleName       string               `json:"middle_name"`
 	CreatedAt        primitive.DateTime   `json:"-"`
@@ -60,7 +60,7 @@ func (students Students) ToStudentResponse() []StudentResponse {
 			ID:               stu.ID,
 			Email:            stu.Email,
 			FirstName:        stu.FirstName,
-			PreferedType:     stu.PreferedType,
+			Domains:          stu.Domains,
 			LastName:         stu.LastName,
 			MiddleName:       stu.MiddleName,
 			CreatedAt:        stu.CreatedAt,
@@ -122,8 +122,8 @@ func (dto *Mentor) ToResponse() *MentorResponse {
 type Task struct {
 	Id        primitive.ObjectID `json:"id" bson:"_id"`
 	Semester  string             `json:"semester"`
-	Type      string             `json:"type"`  // TYPE CAN BE RETAIL, ED-Tech
-	Title     string             `json:"title"` // title of task
+	Domain    string             `json:"domain"` // TYPE CAN BE RETAIL, ED-Tech
+	Title     string             `json:"title"`  // title of task
 	Detail    string             `json:"detail"`
 	CreatedAt primitive.DateTime `json:"created_at" bson:",omitempty"`
 	UpdatedAt primitive.DateTime `json:"updated_at" bson:",omitempty"`
@@ -158,4 +158,12 @@ type NotificationMessage struct {
 	UserToken string
 	Contents  map[string]string
 	Heading   map[string]string
+}
+
+type NotificationEntity struct {
+	Title     string
+	Content   string
+	Image     string
+	CreatedAt primitive.DateTime `bson:"created_at"`
+	UserId    primitive.ObjectID `bson:"user_id"`
 }

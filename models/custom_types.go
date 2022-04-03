@@ -17,13 +17,6 @@ const (
 	FEMALE Gender = 2
 )
 
-type PreferedType string
-
-const (
-	EDTECH PreferedType = "ed-tech"
-	RETAIL PreferedType = "retail"
-)
-
 type Status string
 
 const (
